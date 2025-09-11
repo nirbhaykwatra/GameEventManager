@@ -1,32 +1,24 @@
 {
-  "displayName": "[Package Name]",
-  "author": "Quin Henshaw",
-  "version": "1.0.0",
-  "name": "com.qhenshaw.[packagename]",
-  "documentationUrl": "https://github.com/qhenshaw/[repourl]",
-  "changelogUrl": "https://github.com/qhenshaw/[repourl]/blob/main/CHANGELOG.md",
-  "licensesUrl": "https://github.com/qhenshaw/[repourl]/blob/main/LICENSE.md",
-  "description": "[Description here]",
-  "unity": "2020.1",
+  "name": "com.nirbhaykwatra.gameeventmanager",
+  "version": "0.0.1",
+  "displayName": "Game Event Manager",
+  "description": "A tool for easy management of all event callers and listeners in a scene. Requires Quin Henshaw's Game Events package.",
+  "unity": "6000.0",
+  "unityRelease": "46f1",
+  "documentationUrl": "",
+  "changelogUrl": "",
+  "licensesUrl": "",
   "dependencies": {
-    "com.unity.2d.sprite": "1.0.0",
-	"com.unity.ugui": "1.0.0"
-  },
-  "samples": [
-	{
-      "displayName": "[Sample 1 display name]",
-      "description": "[Sample 1 description]",
-      "path": "Samples~/[Sample1Location]"
-    },
-    {
-      "displayName": "[Sample 2 display name]",
-      "description": "[Sample 2 description]",
-      "path": "Samples~/[Sample2Location]"
-    },
-	{
-      "displayName": "[Sample 3 display name]",
-      "description": "[Sample 3 description]",
-      "path": "Samples~/[Sample3Location]"
-    }
-  ]
+    "com.qhenshaw.unitytools": "3.3.0"
+ },
+ "keywords": [
+    "keyword1",
+    "keyword2",
+    "keyword3"
+  ],
+  "author": {
+    "name": "Nirbhay Kwatra",
+    "email": "contact@nirbhaykwatra.com",
+    "url": ""
+  }
 }

@@ -1,0 +1,19 @@
+{
+    "name": "Game Event Manager",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2da18043ef3336846ac616c73b1ae0e2",
+        "GUID:82cec64d42ffa3e4abb17869314981c2"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,6 +1,6 @@
 {
   "name": "com.nirbhaykwatra.gameeventmanager",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "displayName": "Game Event Manager",
   "description": "A tool for easy management of all event callers and listeners in a scene. Requires Quin Henshaw's Game Events package.",
   "unity": "6000.0",

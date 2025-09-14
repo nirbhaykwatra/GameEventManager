@@ -5,7 +5,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Sirenix.Utilities.Editor;
-using Sirenix.OdinInspector;
 using GameEvents;
 
 namespace GameEventManager
@@ -14,12 +13,11 @@ namespace GameEventManager
     //  capability of rendering UI such as GameObject inspector/components.
     
     // TODO: Add feature where we can select a GameEventAsset SO to show all of its callers and listeners in the active scene.
-    // TODO: Create tab for GameEventAssets, where we can view the listeners and callers for that particular asset in the active scene.
-    public class GameEventEditor : OdinMenuEditorWindow
+    public class GameEventManagerWindow : OdinMenuEditorWindow
     {
-        private Editor gameObjectEditor;
-        private GameObject selectedGameObject;
         private bool showOnSelection;
+        private bool filterByPath;
+        private bool sortByEventType;
         
         private static readonly Type[] callerTypes = Enumerable.OrderBy(TypeCache.GetTypesDerivedFrom(typeof(GameEventCaller<>)), m => m.Name).ToArray();
         private static readonly Type[] listenerTypes = Enumerable.OrderBy(TypeCache.GetTypesDerivedFrom(typeof(GameEventListener<>)), m => m.Name).ToArray();
@@ -28,7 +26,17 @@ namespace GameEventManager
         private static List<GameObject> listenerObjects = new List<GameObject>();
 
         [MenuItem("Tools/Game Events/Game Event Manager", priority = - 10)]
-        private static void OpenEditor() => GetWindow<GameEventEditor>();
+        private static void OpenEditor() => GetWindow<GameEventManagerWindow>();
+        
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            titleContent = new GUIContent("Game Event Manager");
+            AssetDatabase.Refresh();
+            DetectEventObjects();
+            ForceMenuTreeRebuild();
+            MenuTree.Selection.SelectionChanged += OnSelectionChanged;
+        }
 
         protected override void OnBeginDrawEditors()
         {
@@ -51,19 +59,37 @@ namespace GameEventManager
                     DetectEventObjects();
                     ForceMenuTreeRebuild();
                 }
+                bool showByPath = SirenixEditorGUI.ToolbarToggle(filterByPath, "Filter By GameObject");
+                if (showByPath != filterByPath)
+                {
+                    filterByPath = showByPath;
+                    ForceMenuTreeRebuild();
+                }
+                
+                bool showByType = SirenixEditorGUI.ToolbarToggle(sortByEventType, "Filter By Type");
+                if (showByType != sortByEventType)
+                {
+                    sortByEventType = showByType;
+                    ForceMenuTreeRebuild();
+                }
+                
             }
             SirenixEditorGUI.EndHorizontalToolbar();
             DetectEventObjects();
         }
         protected override OdinMenuTree BuildMenuTree()
         {
-            var tree = new OdinMenuTree();
-            tree.Selection.SelectionChanged += OnSelectionChanged;
+            OdinMenuTree tree = new OdinMenuTree();
+            AddEventGameObjectsToMenuTree(tree);
+            return tree;
+        }
 
+        private void AddEventGameObjectsToMenuTree(OdinMenuTree tree)
+        {
             for (int x = 0; x < callerTypes.Length; x++)
             {
                 Type callerType = callerTypes[x];
-                if (callerObjects.Count <= 0) return tree;
+                if (callerObjects.Count <= 0) return;
                 for (int y = 0; y < callerObjects.Count; y++)
                 {
                     if (callerObjects[y] == null)
@@ -72,14 +98,14 @@ namespace GameEventManager
                         continue;
                     }
                     GameObject callerObject = callerObjects[y];
-                    CheckGameObjectType(tree, callerType, callerObject);
+                    AddGameObjectToMenuTree(tree, callerType, callerObject);
                 }
             }
             
             for (int x = 0; x < listenerTypes.Length; x++)
             {
                 Type listenerType = listenerTypes[x];
-                if (listenerObjects.Count <= 0) return tree;
+                if (listenerObjects.Count <= 0) return;
                 for (int y = 0; y < listenerObjects.Count; y++)
                 {
                     if (listenerObjects[y] == null)
@@ -88,11 +114,9 @@ namespace GameEventManager
                         continue;
                     }
                     GameObject listenerObject = listenerObjects[y];
-                    CheckGameObjectType(tree, listenerType, listenerObject);
+                    AddGameObjectToMenuTree(tree, listenerType, listenerObject);
                 }
             }
-            
-            return tree;
         }
 
         protected void DetectEventObjects()
@@ -124,38 +148,54 @@ namespace GameEventManager
             }
         }
 
-        protected void CheckGameObjectType(OdinMenuTree tree, Type type, GameObject gameObject)
+        protected void AddGameObjectToMenuTree(OdinMenuTree tree, Type type, GameObject gameObject)
         {
             if (gameObject.GetComponent(type) != null)
             {
-                OdinMenuItem menuItem = new OdinMenuItem(tree, gameObject.name, gameObject);
-                tree.AddMenuItemAtPath(type.Name, menuItem);
+                if (!filterByPath)
+                {
+                    if (sortByEventType)
+                    {
+                        if (type.ToString().Contains("Caller"))
+                        {
+                            OdinMenuItem menuItem = new OdinMenuItem(tree, gameObject.name, new GameEventObjectWindow(gameObject, type));
+                            tree.AddMenuItemAtPath($"Callers", menuItem);
+                        }
+                        if (type.ToString().Contains("Listener"))
+                        {
+                            OdinMenuItem menuItem = new OdinMenuItem(tree, gameObject.name, new GameEventObjectWindow(gameObject, type));
+                            tree.AddMenuItemAtPath($"Listeners", menuItem);
+                        }
+                    }
+                    else
+                    {
+                        OdinMenuItem menuItem = new OdinMenuItem(tree, gameObject.name, new GameEventObjectWindow(gameObject, type));
+                        tree.AddMenuItemAtPath(type.Name, menuItem);
+                    }
+                }
+                else
+                {
+                    OdinMenuItem menuItem = new OdinMenuItem(tree, type.Name, new GameEventObjectWindow(gameObject, type));
+                    tree.AddMenuItemAtPath(gameObject.name, menuItem);
+                }
             }
         }
         
         protected void OnSelectionChanged(SelectionChangedType selectionChangedType)
         {
-            selectedGameObject = MenuTree.Selection.SelectedValue as GameObject;;
+            GameEventObjectWindow eventObjectWindow = MenuTree.Selection.SelectedValue as GameEventObjectWindow;
                     
-            Selection.activeGameObject = selectedGameObject;
+            Selection.activeGameObject = eventObjectWindow?.SelectedGameObject;
             if (showOnSelection)
             {
-                selectedGameObject = MenuTree.Selection.SelectedValue as GameObject;;
-                    
-                Selection.activeGameObject = selectedGameObject;
-                    
                 SceneView.lastActiveSceneView.FrameSelected();
             }
         }
 
-        protected override void OnDestroy()
+        protected override void OnDisable()
         {
-            // Clean up when window is closed
-            if (gameObjectEditor != null)
-            {
-                DestroyImmediate(gameObjectEditor);
-            }
-            base.OnDestroy();
+            MenuTree.Selection.SelectionChanged -= OnSelectionChanged;
+            base.OnDisable();
         }
     }
 }
